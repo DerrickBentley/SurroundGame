@@ -1,0 +1,38 @@
+package package1;
+import javax.swing.*;
+
+/*********************************************************************
+ * creates the frame and menubar containing three menuitems passed
+ * to the surroundPanel.
+ * @author Derrick Bentley
+ ********************************************************************/
+public class Surround {
+	
+	public static void main(String Args[]){
+		JMenuBar menubar;
+		JMenu file;
+		JMenuItem quitItem;
+		JMenuItem newGameItem;
+		JMenuItem configure;
+		
+		JFrame frame = new JFrame("Surround Game Proj2");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
+		quitItem = new JMenuItem("quit game");	
+		newGameItem = new JMenuItem("new game");
+		configure = new JMenuItem("configure");
+		menubar = new JMenuBar();
+		file = new JMenu("File");
+		
+		SurroundPanel panel;
+		panel = new SurroundPanel(quitItem, newGameItem, configure);
+		frame.setJMenuBar(menubar);
+		menubar.add(file);
+		file.add(newGameItem);
+		file.add(configure);
+		file.add(quitItem);
+		frame.getContentPane().add(panel);
+		frame.setSize(900,625);
+		frame.setVisible(true);
+	}
+}
