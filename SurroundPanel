@@ -1,0 +1,222 @@
+package package1;
+import java.awt.*;
+import java.awt.event.*;
+
+import javax.swing.*;
+
+/**********************************************************************
+ * Creates the GUI for the surround game
+ * @author Derrick bentley
+ *********************************************************************/
+public class SurroundPanel extends JPanel {
+
+	private static final long serialVersionUID = -5159207410773480983L;
+	/** is the starting player */
+	int startPlayer;
+	/** is the number of players in the game. */
+	int players;
+	
+	/** the game of cells is displayed as a 2d array of JButtons */
+	private JButton[][] board;
+	/** initiates the actual game to be played */
+	private SurroundGame game;
+	/** gets the initial board size from the game */
+	private int bdsize;
+	
+	/** creates the new game menu item */
+	private JMenuItem newGameItem;
+	/** creates the quit menu item */
+	private JMenuItem quitItem;
+	/** creates the configure menu item */
+	private JMenuItem configure;
+	/** creates the panel everything is put into */
+	private JPanel panel;
+	
+	/** creates the button listener */
+	private ButtonListener listener;
+	/** creates the grid layout for the button panel */
+	private GridLayout gridpls;
+
+	/******************************************************************
+	 * the class creating this GUI will have 3 items in its menubar,
+	 * this links those 3 option menus with the ones we have created 
+	 * here.
+	 * @param quitItem will be used to close the application.
+	 * @param newGameItem will be to create a new instance of the game.
+	 * @param configure will run through several additional options of
+	 * play.
+	 *****************************************************************/
+	public SurroundPanel(JMenuItem quitItem, JMenuItem newGameItem,
+			JMenuItem configure){
+		panel = new JPanel();
+		listener = new ButtonListener();
+		game = new SurroundGame();
+		
+		this.newGameItem = newGameItem;
+		newGameItem.addActionListener(listener);
+		this.quitItem = quitItem;
+		quitItem.addActionListener(listener);
+		this.configure = configure;
+		configure.addActionListener(listener);
+		
+		drawBoard();
+		displayBoard();
+		add(panel);
+	}
+	
+	/******************************************************************
+	 * creates a new game board according to size and players and players
+	 * makes the 2d button array for the appropriate size given, and adds
+	 * the action listener as lets them join the panel.
+	 * 
+	 * Variables players, bdsize, and startPlayer take the values of the
+	 * previous game and sets them into the new game, as it creates an 
+	 * entire new instance of Game upon resetting the board, 
+	 *****************************************************************/
+	private void drawBoard(){
+		//gets the values set into the game by the user, good or bad.
+		players = game.getTotalPlayers();
+		bdsize = game.getBoardSize();
+		startPlayer = game.getPlayer();
+		//creates the game according to those variables
+		game = new SurroundGame(bdsize, players, startPlayer);
+		//because the engine error checks, resets the variables to what
+		//the game ACTUALLY set the game variables as. regardless of
+		//what the input was, and then creates the graphics accordingly
+		players = game.getTotalPlayers();
+		bdsize = game.getBoardSize();
+		startPlayer = game.getPlayer();
+		board = new JButton[bdsize][bdsize];
+		for(int row = 0; row< bdsize; row++){
+			for(int col = 0; col < bdsize; col++){
+				board[row][col] = new JButton(" ");
+				board[row][col].addActionListener(listener);
+				panel.add(board[row][col]);
+			}
+		}
+		gridpls = new GridLayout(bdsize,bdsize, 2, 3);
+		panel.setLayout(gridpls);
+		panel.repaint();
+		panel.revalidate();
+	}
+	
+	/******************************************************************
+	 * sets the 2d array of buttons to the appropriate values within the
+	 * cells (the player numbers) and displays the buttons as a color
+	 * according to their defense levels. yellow being level 1, orange
+	 * is level 2, and red is level 3. 4 and the piece is already
+	 * surrounded.
+	 *****************************************************************/
+	public void displayBoard(){
+		//checks for the winner so that the game can set warning levels
+		int loser = game.isWinner();
+		for(int row = 0; row < bdsize; row++){
+			for(int col = 0; col < bdsize; col++){
+				Cell c = game.getCell(row,col);
+				//doesn't care about warning levels of pieces not taken
+				if(c.getPlayerNumber() != 0){
+					board[row][col].setText("" +c.getPlayerNumber());
+					if(c.getDefenseLevel() == 0)
+						board[row][col].setBackground(Color.cyan);
+					if(c.getDefenseLevel() == 1)
+						board[row][col].setBackground(Color.yellow);
+					if(c.getDefenseLevel() == 2)
+						board[row][col].setBackground(Color.orange);
+					if(c.getDefenseLevel() == 3)
+						board[row][col].setBackground(Color.red);
+				}
+				else{
+					board[row][col].setText("" + 0);
+					//background "null" is the default button "color"
+					board[row][col].setBackground(null);
+				}
+			}
+		}                                                                                                                                        
+		//checks the game if a player is being surrounded
+		if(loser!=0){
+			JOptionPane.showMessageDialog(null,"Player " + loser
+			   + " Loses!");
+			game.killPlayer(loser);
+			//if indeed a player was killed we are going to check if 
+			//there are anymore remaining players playing the game
+			if(game.foundAWinner()){
+				//if there was only 1 player alive, we restart the game
+				JOptionPane.showMessageDialog(null, game.whoWon() + " "
+						+ "Player won!");
+				game.reset();
+				panel.removeAll();
+				drawBoard();
+			}
+			displayBoard(); //recursion?
+		}
+	}
+	
+	public class ButtonListener implements ActionListener{
+		
+		public void actionPerformed(ActionEvent event) {
+			// Determine which button was selected.
+			for (int row = 0; row < bdsize; row++) 
+				for (int col = 0; col < bdsize; col++)	
+					if (board [row][col] == event.getSource()) 
+						//checks if the button is able to be gotten
+						if (game.select(row, col)){
+							//if the button was available, that player
+							//selects the button.
+							game.nextPlayer();
+						}
+		//resets the entire board to a new board.
+		if(event.getSource() == newGameItem){
+			game.reset();
+			panel.removeAll();
+			drawBoard();
+		}
+		if(event.getSource() == quitItem)
+			System.exit(0);
+		
+		//allows other options of board size, # of players, & who starts
+		if(event.getSource() == configure){
+			panel.removeAll();
+			//will hold the inputed values into strings to be parsed.
+			String tempBDSize;
+			String tempPlayers;
+			String tempStartPlayer;
+			//game engine performs the function of setting defaults if
+			//these inputs arn't valid, these just catch errors.
+			try{
+				tempBDSize = JOptionPane.showInputDialog("Enter Board "
+						+ "Size, 3-20", 10);
+				game.setBoardSize(Integer.parseInt(tempBDSize));
+			}
+			catch (IllegalArgumentException e){
+				JOptionPane.showMessageDialog(null, "Whoops! used "
+						+ "default value boardsize of 10!");
+				//System.out.println("please Spencer, no breakerino");
+			}
+			try{
+				tempPlayers = JOptionPane.showInputDialog("Enter # of "
+						+ "Players, 2-8", 2);
+				game.setTotalPlayers(Integer.parseInt(tempPlayers));
+			}
+			catch(IllegalArgumentException e){
+				JOptionPane.showMessageDialog(null, "Whoops! used "
+						+ "default player number of 2!");
+				//System.out.println("Please SpenceSpence have mercy");
+			}
+			try{
+				tempStartPlayer = JOptionPane.showInputDialog("Enter "
+						+ "Starting player:", 1);
+				game.setPlayer(Integer.parseInt(tempStartPlayer));
+			}
+			catch(IllegalArgumentException e){
+				//System.out.println("Spencer is super handsome :3");
+				JOptionPane.showMessageDialog(null, "Whoops! used "
+						+ "default starting player #1!");
+			}
+			drawBoard();
+		}
+		//after any event on the board, regardless of change, we'll 
+		//update the graphics.
+		displayBoard();
+		}
+	}
+}
